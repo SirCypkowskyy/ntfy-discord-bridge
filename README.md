@@ -31,29 +31,104 @@ git clone https://github.com/SirCypkowskyy/ntfy-discord-bridge.git
 cd ntfy-discord-bridge
 ```
 
-### 2. Add a mapping
-
-```bash
-docker run --rm -v $(pwd)/data:/app/data ntfy-discord-bridge \
-    python cli.py add \
-    --server https://ntfy.sh \
-    --topic your-ntfy-topic \
-    --webhook <YOUR_DISCORD_WEBHOOK_URL>
-```
-
-#### Authenticated servers
-
-Add `--basic username password` or `--token <TOKEN>` as needed.
-
-### 3. Run with Docker Compose
-
-Customize your mappings with the CLI as above, then simply run:
+### 2. Run with Docker Compose
 
 ```bash
 docker compose up -d
 ```
 
-The container will watch your mappings and forward notifications as configured.
+### 3. Add a mapping using CLI
+
+Once the container is running, use the CLI to manage mappings:
+
+```bash
+docker exec -it ntfy-discord-bridge cli add \
+    --server https://ntfy.sh \
+    --topic your-ntfy-topic \
+    --webhook <YOUR_DISCORD_WEBHOOK_URL>
+```
+
+The container will automatically detect new mappings and start forwarding notifications.
+
+## CLI Usage
+
+The CLI tool (`cli`) is available inside the Docker container and can be used to manage your ntfy-to-Discord mappings.
+
+### List all mappings
+
+View all active mappings:
+
+```bash
+docker exec -it ntfy-discord-bridge cli list
+```
+
+This will display a table with:
+- **ID**: Unique identifier for each mapping
+- **Ntfy Server**: The ntfy server URL
+- **Ntfy Topic**: The topic name
+- **Discord Webhook**: The Discord webhook URL (truncated for security)
+- **Auth**: Authentication method used (None, Basic, or Bearer Token)
+
+### Add a new mapping
+
+#### Basic mapping (no authentication)
+
+```bash
+docker exec -it ntfy-discord-bridge cli add \
+    --server https://ntfy.sh \
+    --topic my-topic \
+    --webhook https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN
+```
+
+#### With Basic authentication
+
+```bash
+docker exec -it ntfy-discord-bridge cli add \
+    --server https://ntfy.sh \
+    --topic my-secure-topic \
+    --webhook https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN \
+    --basic username password
+```
+
+#### With Bearer token authentication
+
+```bash
+docker exec -it ntfy-discord-bridge cli add \
+    --server https://ntfy.sh \
+    --topic my-secure-topic \
+    --webhook https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN \
+    --token YOUR_BEARER_TOKEN
+```
+
+### Remove a mapping
+
+Remove a mapping by its ID (use `cli list` to find the ID):
+
+```bash
+docker exec -it ntfy-discord-bridge cli remove --id 1
+```
+
+### Local CLI usage (without Docker)
+
+If you're running the service locally, you can use the CLI directly:
+
+```bash
+# Make sure dependencies are installed
+uv sync
+
+# Use the CLI
+python cli.py list
+python cli.py add --server https://ntfy.sh --topic test --webhook <WEBHOOK_URL>
+python cli.py remove --id 1
+```
+
+Or if the file is executable:
+
+```bash
+./cli.py list
+./cli.py add --server https://ntfy.sh --topic test --webhook <WEBHOOK_URL>
+./cli.py remove --id 1
+```
 
 ---
 

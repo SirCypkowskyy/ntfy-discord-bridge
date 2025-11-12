@@ -25,4 +25,6 @@ ignore = [
     "PTH123", # `open()` should be replaced by `Path.open()`
     "CPY001", #Missing copyright notice at top of file
     "PLR6201", #Use a set literal when testing for membership - This rule's fix is marked as unsafe, as the use of a set literal will error at runtime if either the element being tested for membership (the left-hand side) or any element of the sequence (the right-hand side) is unhashable (like lists or dictionaries). While Ruff will attempt to infer the hashability of both sides and skip the fix when it can determine that either side is unhashable, it may not always be able to do so. https://docs.astral.sh/ruff/rules/literal-membership/#literal-membership-plr6201
+    "EXE001", # Shebang is present but file is not executable
+    
 ]
