@@ -7,6 +7,8 @@
 
 A service that forwards notifications from [ntfy](https://ntfy.sh/) topics to Discord webhooks, deployable via Docker.
 
+**[🇵🇱 Polska wersja README](README.pl.md)** | **[🇬🇧 English README](README.md)**
+
 ## Table of Contents
 
 - [Overview](#overview)
