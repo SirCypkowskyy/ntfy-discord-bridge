@@ -6,6 +6,115 @@ import httpx
 
 from app.core.logging import log
 
+# Discord embed colors (decimal RGB values)
+COLOR_INFO = 3447003  # Blue
+COLOR_SUCCESS = 3066993  # Green
+COLOR_WARNING = 16776960  # Yellow
+COLOR_ERROR = 15158332  # Red
+
+# Priority thresholds
+PRIORITY_URGENT = 5
+PRIORITY_HIGH = 4
+
+# Emoji mappings
+EMOJI_INFO = "ℹ️"  # noqa: RUF001
+EMOJI_SUCCESS = "✅"
+EMOJI_WARNING = "⚠️"
+EMOJI_ERROR = "❌"
+
+# Tag sets for notification type detection
+ERROR_TAGS = {"error", "skull", "rotating_light", "fire", "boom"}
+WARNING_TAGS = {"warning", "exclamation", "construction"}
+SUCCESS_TAGS = {
+    "white_check_mark",
+    "heavy_check_mark",
+    "partying_face",
+    "tada",
+    "check",
+}
+
+
+def _check_tags_for_type(tags_lower: list[str]) -> tuple[int, str] | None:
+    """Check if tags indicate a specific notification type.
+
+    Args:
+        tags_lower: Lowercase list of tags.
+
+    Returns:
+        Tuple of (color, emoji) if tags match a type, None otherwise.
+
+    """
+    if any(tag in tags_lower for tag in ERROR_TAGS):
+        return (COLOR_ERROR, EMOJI_ERROR)
+    if any(tag in tags_lower for tag in WARNING_TAGS):
+        return (COLOR_WARNING, EMOJI_WARNING)
+    if any(tag in tags_lower for tag in SUCCESS_TAGS):
+        return (COLOR_SUCCESS, EMOJI_SUCCESS)
+    return None
+
+
+def _priority_to_type(priority: int | str) -> tuple[int, str]:
+    """Convert priority to notification type.
+
+    Args:
+        priority: The notification priority.
+
+    Returns:
+        Tuple of (color, emoji).
+
+    """
+    # Handle string priorities
+    if isinstance(priority, str):
+        priority_lower = priority.lower()
+        priority_map: dict[str, tuple[int, str]] = {
+            "urgent": (COLOR_ERROR, EMOJI_ERROR),
+            "5": (COLOR_ERROR, EMOJI_ERROR),
+            "high": (COLOR_WARNING, EMOJI_WARNING),
+            "4": (COLOR_WARNING, EMOJI_WARNING),
+        }
+        return priority_map.get(priority_lower, (COLOR_INFO, EMOJI_INFO))
+
+    # Handle numeric priorities
+    if isinstance(priority, int):
+        if priority >= PRIORITY_URGENT:
+            return (COLOR_ERROR, EMOJI_ERROR)
+        if priority >= PRIORITY_HIGH:
+            return (COLOR_WARNING, EMOJI_WARNING)
+        return (COLOR_INFO, EMOJI_INFO)
+
+    return (COLOR_INFO, EMOJI_INFO)
+
+
+def _determine_notification_type(
+    priority: int | str | None,
+    tags: list[str] | None,
+) -> tuple[int, str]:
+    """Determine notification type based on priority and tags.
+
+    Args:
+        priority: The notification priority (1-5 or string like "urgent", "high").
+        tags: List of tags associated with the notification.
+
+    Returns:
+        Tuple of (color, emoji) where:
+        - color: Discord embed color (decimal RGB)
+        - emoji: Emoji string for the notification type
+
+    """
+    tags = tags or []
+    tags_lower = [tag.lower() for tag in tags]
+
+    # Check tags first (they can override priority)
+    tag_result = _check_tags_for_type(tags_lower)
+    if tag_result is not None:
+        return tag_result
+
+    # Determine by priority if no matching tags
+    if priority is None:
+        return (COLOR_INFO, EMOJI_INFO)
+
+    return _priority_to_type(priority)
+
 
 async def post_to_discord(
     session: httpx.AsyncClient,
@@ -25,6 +134,15 @@ async def post_to_discord(
     """
     title = ntfy_message.get("title", "New Ntfy message")
     message = ntfy_message.get("message", "*No content*")
+    priority = ntfy_message.get("priority")
+    tags = ntfy_message.get("tags", [])
+
+    # Determine notification type based on priority and tags
+    color, emoji = _determine_notification_type(priority, tags)
+
+    # Add emoji to title if not already present
+    if not title.startswith(emoji):
+        title = f"{emoji} {title}"
 
     # Create a nice payload for Discord
     payload = {
@@ -32,7 +150,7 @@ async def post_to_discord(
             {
                 "title": title,
                 "description": message,
-                "color": 5814783,  # Blue color
+                "color": color,
                 "footer": {
                     "text": f"Ntfy topic: {ntfy_message.get('topic')}",
                 },
