@@ -220,3 +220,5 @@ credentials.json
 
 celerybeat-schedule.db
 **/celerybeat-schedule.db
+
+data/*
