@@ -1,5 +1,6 @@
 """Discord webhook integration module."""
 
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -144,6 +145,17 @@ async def post_to_discord(
     if not title.startswith(emoji):
         title = f"{emoji} {title}"
 
+    # Get timestamp from ntfy message or use current time
+    # Ntfy provides 'time' as Unix timestamp in seconds
+    timestamp = ntfy_message.get("time")
+    if timestamp:
+        # Convert Unix timestamp to ISO 8601 format
+        dt = datetime.fromtimestamp(timestamp, tz=UTC)
+        timestamp_iso = dt.isoformat()
+    else:
+        # Use current time if not provided
+        timestamp_iso = datetime.now(UTC).isoformat()
+
     # Create a nice payload for Discord
     payload = {
         "embeds": [
@@ -151,6 +163,7 @@ async def post_to_discord(
                 "title": title,
                 "description": message,
                 "color": color,
+                "timestamp": timestamp_iso,
                 "footer": {
                     "text": f"Ntfy topic: {ntfy_message.get('topic')}",
                 },
