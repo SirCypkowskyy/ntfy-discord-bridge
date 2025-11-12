@@ -81,7 +81,15 @@ async def listen_to_ntfy(mapping: dict[str, Any]) -> None:
     auth_header = mapping.get("ntfy_auth_header")
 
     ntfy_url = f"{server.rstrip('/')}/{topic.lstrip('/')}/json"
-    headers = {}
+    # Configure headers for optimal streaming connection
+    # - User-Agent: Identifies the client (good practice)
+    # - Accept: Specifies we want NDJSON (newline-delimited JSON) stream format
+    # - Connection: keep-alive: Maintains persistent connection for streaming
+    headers = {
+        "User-Agent": "ntfy-discord-bridge/0.1.0",
+        "Accept": "application/x-ndjson, application/json",
+        "Connection": "keep-alive",
+    }
     if auth_header:
         headers["Authorization"] = auth_header
 
@@ -94,11 +102,19 @@ async def listen_to_ntfy(mapping: dict[str, Any]) -> None:
     )
 
     # Use a separate Discord session to not block Ntfy connections
+    # Configure timeout for streaming: no read timeout (None) for long-lived streams,
+    # but keep reasonable connect/write timeouts
+    stream_timeout = httpx.Timeout(
+        connect=10.0,  # 10 seconds to establish connection
+        read=None,  # No read timeout for streaming connections
+        write=10.0,  # 10 seconds to write data
+        pool=5.0,  # 5 seconds to get connection from pool
+    )
     async with (
         httpx.AsyncClient() as discord_client,
         httpx.AsyncClient(
             headers=headers,
-            timeout=30.0,
+            timeout=stream_timeout,
         ) as ntfy_client,
     ):
         try:
