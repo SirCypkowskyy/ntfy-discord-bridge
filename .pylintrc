@@ -1,0 +1,10 @@
+# The purpose of this pylint configuration is to enforce lint checks with a limit on the number of lines per file.
+# This ensures that files do not become too long and encourages a natural tendency to split them into smaller files.
+# In this way, we provide logic decoupling between components.
+
+[MESSAGES CONTROL]
+disable=all
+enable=too-many-lines
+
+[FORMAT]
+max-module-lines=200

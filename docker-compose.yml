@@ -1,0 +1,16 @@
+services:
+  ntfy-discord-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ntfy-discord-bridge
+    restart: unless-stopped
+    environment:
+      # Set environment variables as needed, or uncomment and customize:
+      # - LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+    # Expose as needed if providing an HTTP API or admin, otherwise can be omitted
+    # ports:
+    #   - "8080:8080"
+    command: ["sh", "-c", "exec /app/.venv/bin/python main.py"]
