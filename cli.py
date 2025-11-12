@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """CLI for the ntfy-discord-bridge service."""
 
 import argparse

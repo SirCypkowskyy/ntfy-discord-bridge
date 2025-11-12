@@ -10,6 +10,10 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --frozen --no-cache
 
+# Make cli.py executable and create a symlink in venv bin for easy access
+RUN chmod +x /app/cli.py && \
+    ln -sf /app/cli.py /app/.venv/bin/cli
+
 # Ensure virtualenv binaries are available on PATH for runtime commands
 ENV PATH="/app/.venv/bin:${PATH}"
 
